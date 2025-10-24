@@ -248,13 +248,18 @@ class PuppeteerScraper {
     return keywords.split(',').map(k => k.trim()).filter(Boolean);
   }
 
-  async scrapeAll(url) {
-    console.log(`[Puppeteer] Starting scrape from: ${url}`);
+  async scrapeAll(url, limit = 5) {
+    console.log(`[Puppeteer] Starting scrape from: ${url} (limit: ${limit})`);
     const links = await this.scrapeListPage(url);
     console.log(`[Puppeteer] Found ${links.length} articles`);
 
     const articles = [];
     for (const link of links) {
+      if (articles.length >= limit) {
+        console.log(`[Puppeteer] Reached limit of ${limit} articles`);
+        break;
+      }
+      
       console.log(`[Puppeteer] Scraping: ${link}`);
       const article = await this.scrapeArticle(link);
       if (article && article.title) {

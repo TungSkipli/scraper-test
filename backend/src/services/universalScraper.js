@@ -164,13 +164,14 @@ class UniversalScraper {
     return [];
   }
 
-  async scrapeAll(url) {
-    console.log(`Starting hybrid scrape from: ${url}`);
+  async scrapeAll(url, limit = 5) {
+    console.log(`Starting hybrid scrape from: ${url} (limit: ${limit})`);
     
     if (this.shouldUsePuppeteer(url)) {
       console.log('Using Puppeteer (JS-heavy site detected)');
       const scraper = await this.getPuppeteerScraper();
-      return await scraper.scrapeAll(url);
+      const articles = await scraper.scrapeAll(url);
+      return articles.slice(0, limit);
     }
 
     console.log('Trying axios/cheerio first...');
@@ -180,13 +181,19 @@ class UniversalScraper {
     if (links.length === 0) {
       console.log('No links found with axios, switching to Puppeteer...');
       const scraper = await this.getPuppeteerScraper();
-      return await scraper.scrapeAll(url);
+      const articles = await scraper.scrapeAll(url);
+      return articles.slice(0, limit);
     }
 
     const articles = [];
     let failedCount = 0;
     
     for (const link of links) {
+      if (articles.length >= limit) {
+        console.log(`Reached limit of ${limit} articles`);
+        break;
+      }
+      
       console.log(`Scraping: ${link}`);
       let article = await this.scrapeArticle(link);
       
