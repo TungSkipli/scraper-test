@@ -133,13 +133,17 @@ class UniversalScraper {
     return [];
   }
 
-  async scrapeAll(url) {
+  async scrapeAll(url, limit = 5) {
     console.log(`Starting scrape from: ${url}`);
     const links = await this.scrapeListPage(url);
     console.log(`Found ${links.length} articles`);
 
+    // Limit number of links to process to avoid over-scraping
+    const limitedLinks = Array.isArray(links) ? links.slice(0, limit) : [];
+    console.log(`Processing ${limitedLinks.length} articles (limit: ${limit})`);
+
     const articles = [];
-    for (const link of links) {
+    for (const link of limitedLinks) {
       console.log(`Scraping: ${link}`);
       const article = await this.scrapeArticle(link);
       if (article && article.title) {
