@@ -133,7 +133,7 @@ class UniversalScraper {
     return [];
   }
 
-  async scrapeAll(url, limit = 5) {
+  async scrapeAll(url, limit = 2) {
     console.log(`Starting scrape from: ${url}`);
     const links = await this.scrapeListPage(url);
     console.log(`Found ${links.length} articles`);
