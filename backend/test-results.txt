@@ -1,0 +1,4 @@
+Starting test...
+
+=== RESULTS ===
+Articles found: 0

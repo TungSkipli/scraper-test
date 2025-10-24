@@ -1,11 +1,19 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { extract } = require('@extractus/article-extractor');
+const PuppeteerScraper = require('./puppeteerScraper');
 
 class UniversalScraper {
-  constructor() {
+  constructor(options = {}) {
     this.timeout = 10000;
     this.maxRetries = 3;
+    this.usePuppeteer = options.usePuppeteer || 'auto';
+    this.puppeteerScraper = null;
+    this.jsRequiredDomains = [
+      'vvnm.vietbao.com',
+      'tinnuocmy.asia',
+      'saigonnhonews.com'
+    ];
   }
 
   async fetchWithRetry(url, retries = 0) {
@@ -30,6 +38,29 @@ class UniversalScraper {
 
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  shouldUsePuppeteer(url) {
+    if (this.usePuppeteer === 'always') return true;
+    if (this.usePuppeteer === 'never') return false;
+    
+    const hostname = new URL(url).hostname;
+    return this.jsRequiredDomains.some(domain => hostname.includes(domain));
+  }
+
+  async getPuppeteerScraper() {
+    if (!this.puppeteerScraper) {
+      this.puppeteerScraper = new PuppeteerScraper();
+    }
+    return this.puppeteerScraper;
+  }
+
+  isValidArticle(article) {
+    return article && 
+           article.title && 
+           article.title.length > 10 &&
+           article.content && 
+           article.content.length > 100;
   }
 
   //tìm tất cả các link bài báo trên trang
@@ -134,18 +165,48 @@ class UniversalScraper {
   }
 
   async scrapeAll(url) {
-    console.log(`Starting scrape from: ${url}`);
-    const links = await this.scrapeListPage(url);
-    console.log(`Found ${links.length} articles`);
+    console.log(`Starting hybrid scrape from: ${url}`);
+    
+    if (this.shouldUsePuppeteer(url)) {
+      console.log('Using Puppeteer (JS-heavy site detected)');
+      const scraper = await this.getPuppeteerScraper();
+      return await scraper.scrapeAll(url);
+    }
+
+    console.log('Trying axios/cheerio first...');
+    let links = await this.scrapeListPage(url);
+    console.log(`Found ${links.length} articles with axios/cheerio`);
+
+    if (links.length === 0) {
+      console.log('No links found with axios, switching to Puppeteer...');
+      const scraper = await this.getPuppeteerScraper();
+      return await scraper.scrapeAll(url);
+    }
 
     const articles = [];
+    let failedCount = 0;
+    
     for (const link of links) {
       console.log(`Scraping: ${link}`);
-      const article = await this.scrapeArticle(link);
-      if (article && article.title) {
-        articles.push(article);
+      let article = await this.scrapeArticle(link);
+      
+      if (!this.isValidArticle(article) && failedCount < 3) {
+        console.log(`Invalid article data, retrying with Puppeteer: ${link}`);
+        const scraper = await this.getPuppeteerScraper();
+        article = await scraper.scrapeArticle(link);
+        failedCount++;
       }
+
+      if (this.isValidArticle(article)) {
+        articles.push(article);
+        failedCount = 0;
+      }
+      
       await this.delay(500);
+    }
+
+    if (this.puppeteerScraper) {
+      await this.puppeteerScraper.closeBrowser();
     }
 
     return articles;

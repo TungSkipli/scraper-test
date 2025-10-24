@@ -6,7 +6,7 @@ const algolia = new AlgoliaService();
 
 exports.scrapeAndSave = async (req, res) => {
   try {
-    const { url } = req.body;
+    const { url, usePuppeteer = 'auto' } = req.body;
     
     if (!url) {
       return res.status(400).json({
@@ -16,8 +16,9 @@ exports.scrapeAndSave = async (req, res) => {
     }
 
     console.log('Starting scrape process...');
+    console.log('Mode:', usePuppeteer);
     
-    const scraper = new UniversalScraper();
+    const scraper = new UniversalScraper({ usePuppeteer });
     const articles = await scraper.scrapeAll(url);
     
     if (articles.length === 0) {
