@@ -1,10 +1,14 @@
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
+const DOMAnalyzer = require('./domAnalyzer');
+const SelectorCache = require('./selectorCache');
 
 class PuppeteerScraper {
   constructor() {
     this.browser = null;
     this.timeout = 30000;
+    this.domAnalyzer = new DOMAnalyzer();
+    this.selectorCache = new SelectorCache();
   }
 
   async initBrowser() {
@@ -15,7 +19,16 @@ class PuppeteerScraper {
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-web-security'
+          '--disable-web-security',
+          '--proxy-bypass-list=*',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--no-first-run',
+          '--no-zygote',
+          '--deterministic-fetch',
+          '--disable-features=IsolateOrigins',
+          '--disable-site-isolation-trials'
         ]
       });
     }
@@ -39,42 +52,72 @@ class PuppeteerScraper {
     
     try {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      await page.goto(url, { 
-        waitUntil: 'networkidle2',
-        timeout: this.timeout 
+      await page.setRequestInterception(true);
+      
+      // Block unnecessary resources
+      page.on('request', (request) => {
+        const resourceType = request.resourceType();
+        if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+          request.abort();
+        } else {
+          request.continue();
+        }
       });
+
+      // Add error handler
+      page.on('error', error => {
+        console.error('Page error:', error);
+      });
+
+      // Add console handler
+      page.on('console', msg => {
+        console.log('Page console:', msg.text());
+      });
+
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await page.goto(url, { 
+            waitUntil: 'networkidle2',
+            timeout: this.timeout 
+          });
+          break;
+        } catch (error) {
+          console.error(`Attempt ${4-retries}/3 failed:`, error.message);
+          retries--;
+          if (retries === 0) throw error;
+          await this.delay(2000); // Wait before retry
+        }
+      }
       
       await this.delay(2000);
       
-      const html = await page.content();
-      const $ = cheerio.load(html);
-      const articleLinks = new Set();
-      const baseUrl = new URL(url);
-
-      $('a[href]').each((i, elem) => {
-        const $elem = $(elem);
-        const $parent = $elem.closest('article, .item-news, .item-news-common, .box-category-item, .story, .news-item, .post, .article-item, .news-box, .entry, .content-item');
+      let selector = await this.selectorCache.get(url);
+      let articleLinks = [];
+      
+      if (selector) {
+        console.log(`[Puppeteer] Using cached selector: ${selector}`);
+        articleLinks = await this.domAnalyzer.extractLinksWithSelector(page, selector, url);
+      }
+      
+      if (articleLinks.length === 0) {
+        console.log('[Puppeteer] Analyzing page structure...');
+        const analysis = await this.domAnalyzer.analyzePageStructure(page);
+        selector = this.domAnalyzer.generateOptimalSelector(analysis);
         
-        if ($parent.length === 0) return;
-        if ($parent.find('.ic-video').length > 0) return;
-        if ($parent.hasClass('banner') || $parent.hasClass('ads')) return;
+        console.log(`[Puppeteer] Generated selector: ${selector}`);
+        articleLinks = await this.domAnalyzer.extractLinksWithSelector(page, selector, url);
         
-        let link = $elem.attr('href');
-        if (!link) return;
-        
-        if (link.includes('/video') || link.includes('/tv.html') || link.includes('#') || link.includes('javascript:')) return;
-        
-        if (!link.startsWith('http')) {
-          link = baseUrl.origin + (link.startsWith('/') ? '' : '/') + link;
+        if (articleLinks.length > 0) {
+          await this.selectorCache.set(url, selector, { 
+            linksFound: articleLinks.length 
+          });
         }
-        
-        if (link.includes(baseUrl.hostname) && link !== url) {
-          articleLinks.add(link);
-        }
-      });
+      }
 
       await page.close();
-      return Array.from(articleLinks);
+      console.log(`[Puppeteer] Extracted ${articleLinks.length} article links`);
+      return articleLinks;
     } catch (error) {
       console.error(`Puppeteer scrapeListPage error for ${url}:`, error.message);
       await page.close();

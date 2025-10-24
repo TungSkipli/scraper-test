@@ -1,0 +1,461 @@
+{
+  "info": {
+    "name": "Scraper Testing Workflow",
+    "description": "Test từng bước của Auto-Detect Scraper System\n\n## Workflow:\n1. Analyze DOM Structure\n2. Extract Links\n3. Test Selector\n4. Scrape Single Article\n5. View Cache\n6. Full Scrape Process",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "WORKFLOW - Test Từng Bước",
+      "item": [
+        {
+          "name": "STEP 1: Analyze DOM Structure",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/analyze",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "analyze"]
+            },
+            "description": "**Bước 1: Phân tích cấu trúc DOM**\n\nAPI này sẽ:\n- Quét toàn bộ page\n- Phát hiện các containers chứa article links\n- Chấm điểm các containers\n- Tạo selector tối ưu\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"analysis\": {\n    \"totalContainersFound\": 50,\n    \"linkStats\": { \"total\": 200, \"withText\": 150 },\n    \"topContainers\": [...],\n    \"generatedSelector\": \"article, .item-news\"\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 2: Extract Links Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/extract-links",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "extract-links"]
+            },
+            "description": "**Bước 2: Trích xuất links từ page**\n\nAPI này sẽ:\n- Sử dụng selector auto-detect hoặc cached selector\n- Extract tất cả article links\n- Trả về danh sách URLs\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"count\": 25,\n  \"links\": [\"url1\", \"url2\", ...]\n}\n```\n\n**Note:** Có thể truyền `selector` trong body để test selector cụ thể"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 2b: Extract Links with Custom Selector",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net\",\n  \"selector\": \"article, .item-news\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/extract-links",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "extract-links"]
+            },
+            "description": "**Test với custom selector**\n\nDùng selector từ STEP 1 để test xem có extract được links không"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 3: Test Selector",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net\",\n  \"selector\": \"article.item-news\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/test-selector",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "test-selector"]
+            },
+            "description": "**Bước 3: Test selector có hoạt động không**\n\nAPI này sẽ:\n- Apply selector lên page\n- Đếm số elements matched\n- Extract links và trả về sample\n- Validate selector\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"test\": {\n    \"elementsMatched\": 30,\n    \"linksExtracted\": 25,\n    \"isValid\": true,\n    \"sampleLinks\": [...]\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 4: Scrape Single Article",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net/kinh-doanh/some-article-url.html\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/scrape-article",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "scrape-article"]
+            },
+            "description": "**Bước 4: Scrape nội dung 1 bài viết**\n\nAPI này sẽ:\n- Extract title, content, author, image\n- Parse metadata (published date, tags)\n- Trả về article object đầy đủ\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"article\": {\n    \"title\": \"...\",\n    \"content\": \"...\",\n    \"author\": \"...\",\n    \"image\": {...},\n    \"tags\": [...]\n  }\n}\n```\n\n**Note:** Lấy URL từ kết quả STEP 2"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test từng bước của workflow để hiểu rõ cách system hoạt động"
+    },
+    {
+      "name": "CACHE MANAGEMENT",
+      "item": [
+        {
+          "name": "View All Cache",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/cache",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "cache"]
+            },
+            "description": "**Xem tất cả selectors đã được cache**\n\nResponse bao gồm:\n- Tổng số domains đã học\n- List các domains với selector tương ứng\n- Metadata (lastUsed, successCount)\n\n**Example Response:**\n```json\n{\n  \"success\": true,\n  \"cache\": {\n    \"totalDomains\": 3,\n    \"domains\": [\n      {\n        \"domain\": \"vnexpress.net\",\n        \"selector\": \"article, .item-news\",\n        \"successCount\": 10,\n        \"lastUsed\": \"2025-10-24T03:00:00Z\"\n      }\n    ]\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cache by Domain",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/cache/domain?url=https://vnexpress.net",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "cache", "domain"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "https://vnexpress.net",
+                  "description": "URL của domain cần check"
+                }
+              ]
+            },
+            "description": "**Kiểm tra cache cho 1 domain cụ thể**\n\nResponse:\n```json\n{\n  \"success\": true,\n  \"domain\": \"vnexpress.net\",\n  \"selector\": \"article, .item-news\",\n  \"cached\": true\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Save to Cache Manually",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://tuoitre.vn\",\n  \"selector\": \".box-category-item\",\n  \"metadata\": {\n    \"manuallyAdded\": true,\n    \"note\": \"Custom selector for Tuoi Tre\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/cache",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "cache"]
+            },
+            "description": "**Lưu selector manually vào cache**\n\nHữu ích khi bạn đã biết selector tối ưu cho 1 site và muốn skip bước analyze"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear All Cache",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/cache",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "cache"]
+            },
+            "description": "**Xóa toàn bộ cache**\n\nReset tất cả selectors đã học. System sẽ phải analyze lại từ đầu."
+          },
+          "response": []
+        }
+      ],
+      "description": "Quản lý selector cache"
+    },
+    {
+      "name": "FULL SCRAPE PROCESS",
+      "item": [
+        {
+          "name": "Full Scrape - VnExpress",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net\",\n  \"usePuppeteer\": \"auto\",\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/scrape",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "scrape"]
+            },
+            "description": "**Full scrape process**\n\nToàn bộ workflow tự động:\n1. Analyze hoặc load từ cache\n2. Extract links\n3. Scrape từng article\n4. Save vào Firestore\n5. Index vào Algolia\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"count\": 5,\n  \"collection\": \"news/articles/vnexpress_net\",\n  \"articles\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Full Scrape - Tuổi Trẻ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://tuoitre.vn\",\n  \"usePuppeteer\": \"auto\",\n  \"limit\": 3\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/scrape",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "scrape"]
+            },
+            "description": "Test với Tuổi Trẻ"
+          },
+          "response": []
+        },
+        {
+          "name": "Full Scrape - Force Puppeteer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://vnexpress.net/kinh-doanh\",\n  \"usePuppeteer\": \"always\",\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/scrape",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "scrape"]
+            },
+            "description": "Force sử dụng Puppeteer với DOM Analyzer"
+          },
+          "response": []
+        }
+      ],
+      "description": "Full scrape process - tất cả bước được chạy tự động"
+    },
+    {
+      "name": "SEARCH & UTILITIES",
+      "item": [
+        {
+          "name": "Search Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/search?q=kinh doanh&limit=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "kinh doanh"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search articles đã scrape trong Algolia"
+          },
+          "response": []
+        },
+        {
+          "name": "List Algolia Indices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/indices",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "indices"]
+            },
+            "description": "Xem danh sách indices trong Algolia"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": [""]
+            },
+            "description": "Kiểm tra server running"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TEST CASES - Different Sites",
+      "item": [
+        {
+          "name": "Test - Thanh Niên",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://thanhnien.vn\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/analyze",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "analyze"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test - Dân Trí",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://dantri.com.vn\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/analyze",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "analyze"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test - Custom Website",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://your-website.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/analyze",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "analyze"]
+            },
+            "description": "Test với bất kỳ website nào"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test cases cho các websites khác nhau"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "test_url",
+      "value": "https://vnexpress.net",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "tinnuocmy.asia": {
+    "selector": ".big, .pkg, .blk, .info",
+    "lastUsed": "2025-10-24T03:09:33.496Z",
+    "successCount": 1,
+    "linksFound": 81
+  },
+  "ngoisao.vnexpress.net": {
+    "selector": ".drop_menu_hover, .content, .thumb_art, .tag",
+    "lastUsed": "2025-10-24T06:19:36.887Z",
+    "successCount": 1,
+    "linksFound": 76
+  },
+  "vnexpress.net": {
+    "selector": ".item-news, article, .swiper-slide, .thumb-art, .wrap-sum-news",
+    "lastUsed": "2025-10-24T06:29:15.962Z",
+    "successCount": 1,
+    "linksFound": 85
+  }
+}
